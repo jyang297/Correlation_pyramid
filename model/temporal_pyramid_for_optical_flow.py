@@ -117,8 +117,8 @@ class IF_Recurrent_Image_Layer(nn.Module):
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
     def forward_delta_flow_block(self, forward_warped_image_this_layer, forward_temporal_feature_this_layer, ds_image_1):
-        forward_warped_feature_this_layer = self.conv_f_feature(torch.cat([forward_warped_image_this_layer,forward_temporal_feature_this_layer], dim=1)
-        delta_f_with_mask = self.conv_f_delta_mask(torch.cat([forward_warped_feature_this_layer, ds_image_1], dim=1)
+        forward_warped_feature_this_layer = self.conv_f_feature(torch.cat([forward_warped_image_this_layer,forward_temporal_feature_this_layer], dim=1))
+        delta_f_with_mask = self.conv_f_delta_mask(torch.cat([forward_warped_feature_this_layer, ds_image_1], dim=1))
         return delta_f_with_mask, forward_warped_feature_this_layer
 
     def backward_delta_flow_block(self, back_warped_image_this_layer, back_temporal_feature_this_layer, ds_image_0):
@@ -211,6 +211,54 @@ class prediction_for_intermediate_frame(nn.Module):
 class Optical_Flow_Estimator(nn.Module):
     def __init__(self):
         super().__init__()
+        self.flow_compute = nn.Sequential(
+            nn.Conv2d(in_c)
+        ) 
+        
+    def correlation_pack_of_two_features(self, bi_flow_previous, feature_0, feature_1):
+        # The bi_flow and features should at the same 
+        # So the bi_flow_previous is the direct output of the previous layer
+        
+        corr_fn=correlation.FunctionCorrelation
+        bi_flow = F.interpolate(
+                    input=bi_flow_previous, scale_factor=0.5,
+                    mode="bilinear", align_corners=False) * 0.5
+        warped_feat0 = softsplat.FunctionSoftsplat(
+                tenInput=feat0, tenFlow=bi_flow[:, :2]*0.25*0.5,
+                tenMetric=None, strType='average')
+        warped_feat1 = softsplat.FunctionSoftsplat(
+                tenInput=feat1, tenFlow=bi_flow[:, 2:]*0.25*0.5,
+                tenMetric=None, strType='average')
+        volume = F.leaky_relu(
+                input=corr_fn(tenFirst=warped_feat0, tenSecond=warped_feat1),
+                negative_slope=0.1, inplace=False)
+        return warped_feat0, warped_feat1, volume
 
+    def forward(self, feature0, feature1, bi_flow_previous, forward_temporal_feature, backward_temporal_feature):
+        
+        warped_feature0, warped_feature1, volume = self.correlation_pack_of_two_features(bi_flow_previous, feature_0, feature_1)
+
+        # Forward compute
+        bi_flow_forward = self.flow_compute(torch.cat([warped_feature0, forward_temporal_feature, volume], dim=1))    
+
+        # Backward compute 
+        bi_flow_backward = self.flow_compute(torch.cat([warped_feature1, backward_temporal_feature, volume], dim=1))
+        
+        bi_flow = torch.cat([bi_flow_forward, bi_flow_backward], dim=1)
+        
+        return bi_flow
+        
+        
+class Pipeline(nn.Module):
+    def __init__(self):
+        self.pas = None
+        
     def forward(self, x):
-        ori_optical_flow = x[:, :3]
+        last_flow = torch.zeros(
+                        (N, 4, H // (2 ** (level+2)), W //(2 ** (level+2)))
+                        ).to(img0.device)
+        last_feat = torch.zeros(
+                        (N, 64, H // (2 ** (level+2)), W // (2 ** (level+2)))
+                        ).to(img0.device)
+        
+        
