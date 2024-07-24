@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from model.loss import *
 from model.laplacian import *
 
-from model.GRU_simplified_pyramid_warp import SimplifiedWarp_Pipeline
+from model.correlation_pipeline import Pipeline
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.autograd.set_detect_anomaly(True)
@@ -24,7 +24,7 @@ with open('/home/jyzhao/Code/ResLSTM/CustomConfig.yaml",','r') as file:
 class Model:
     def __init__(self,local_rank=-1, arbitrary=False):
 
-        self.flownet = SimplifiedWarp_Pipeline()
+        self.flownet = Pipeline()
         self.device()
         self.optimG = AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-3) # use large weight decay may avoid NaN loss
         self.lap = LapLoss()
@@ -61,7 +61,7 @@ class Model:
         if not os.path.exists(path):
             os.makedirs(path)
         if rank == 0:
-            torch.save(self.flownet.state_dict(),'{}/flownet.pkl'.format(path))
+            torch.save(self.flownet.state_dict(),'{}/flownet_corr.pkl'.format(path))
 
 
     def update(self, allframes, learning_rate=0, mul=1, training=True, flow_gt=None):

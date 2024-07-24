@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 import model.warplayer as warplayer
 from model.ConvGRU import unitConvGRU as unitGRU
-from model.ConvGRU import Gru_ini_Image_resol as h_image_ini
 from refine import conv
 
 
