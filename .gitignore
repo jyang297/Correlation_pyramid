@@ -13,3 +13,5 @@ simple_train_log/
 simple_intrain_log/
 RIFE_log/
 spynet-sintel.pth
+
+slurm*

@@ -30,7 +30,7 @@ class VimeoDatasetSep(Dataset):
         self.load_data()
 
     def __len__(self):
-        return len(self.meta_data)  //800
+        return len(self.meta_data) 
 
     def load_data(self):
         cnt = int(len(self.trainlist) * 0.95)

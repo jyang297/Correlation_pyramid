@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --mem=32G
+#SBATCH --mem=20G
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
-#SBATCH --time=220:0:0
+#SBATCH --ntasks-per-node=2
+#SBATCH --time=144:0:0
 #SBATCH --mail-user=jyang297@uottawa.ca
 #SBATCH --mail-type=ALL
-#SBATCH --gres=gpu:V100l:2
+#SBATCH --gres=gpu:a100:1
 module purge
 # Change python version if necessary
 module load StdEnv/2023
